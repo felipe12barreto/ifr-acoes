@@ -3,7 +3,10 @@ import pandas as pd
 import ta
 import streamlit as st
 
-# SUA LISTA DE AÇÕES
+# =========================
+# LISTAS
+# =========================
+
 acoes = [
     "ITUB4.SA", "BBDC4.SA", "BBAS3.SA", "SANB4.SA", "BPAC11.SA", "B3SA3.SA", "PSSA3.SA",
     "VALE3.SA", "GOAU4.SA", "GGBR4.SA", "CMIN3.SA",
@@ -13,7 +16,21 @@ acoes = [
     "BBSE3.SA", "CXSE3.SA", "MDIA3.SA", "SBSP3.SA"
 ]
 
-# FUNÇÃO PRA CALCULAR IFR
+fiis = [
+    "KNCR11.SA",
+    "BRCO11.SA",
+    "HGRU11.SA",
+    "MXRF11.SA",
+    "XPLG11.SA",
+    "BTHF11.SA"
+]
+
+btc = ["BTC-USD"]
+
+# =========================
+# FUNÇÃO IFR
+# =========================
+
 def calcular_ifr(ticker):
     try:
         df = yf.download(
@@ -27,7 +44,6 @@ def calcular_ifr(ticker):
         if df.empty or len(df) < 20:
             return None
 
-        # corrigir colunas multi-index
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
@@ -35,36 +51,41 @@ def calcular_ifr(ticker):
 
         return round(df['rsi'].iloc[-1], 2)
 
-    except Exception as e:
-        print(f"Erro em {ticker}: {e}")
+    except:
         return None
 
-# GERAR DADOS
-dados = []
+# =========================
+# FUNÇÃO PARA GERAR TABELA
+# =========================
 
-for acao in acoes:
-    ifr = calcular_ifr(acao)
+def gerar_tabela(lista, tipo="acao"):
+    dados = []
 
-    ticker_limpo = acao.replace(".SA", "")
+    for ativo in lista:
+        ifr = calcular_ifr(ativo)
 
-    # LINK DIRETO PRO GRÁFICO
-    link = f"https://www.tradingview.com/chart/?symbol=BMFBOVESPA:{ticker_limpo}"
+        nome = ativo.replace(".SA", "").replace("-USD", "")
 
-    dados.append({
-        "Ação": f'<a href="{link}" target="_blank">{ticker_limpo}</a>',
-        "IFR 14 Semanal": ifr
-    })
+        if tipo == "btc":
+            link = f"https://www.tradingview.com/chart/?symbol=BTCUSD"
+        else:
+            link = f"https://www.tradingview.com/chart/?symbol=BMFBOVESPA:{nome}"
 
-# CRIAR DATAFRAME
-df = pd.DataFrame(dados)
+        dados.append({
+            "Ativo": f'<a href="{link}" target="_blank">{nome}</a>',
+            "IFR 14 Semanal": ifr
+        })
 
-# REMOVER None
-df = df.dropna()
+    df = pd.DataFrame(dados)
+    df = df.dropna()
+    df = df.sort_values(by="IFR 14 Semanal")
 
-# ORDENAR
-df = df.sort_values(by="IFR 14 Semanal")
+    return df
 
-# FUNÇÃO DE COR
+# =========================
+# COR IFR
+# =========================
+
 def color_ifr(val):
     if val < 30:
         return 'color: green'
@@ -75,11 +96,29 @@ def color_ifr(val):
     else:
         return 'color: red'
 
-# APLICAR ESTILO
-styled_df = df.style.applymap(color_ifr, subset=["IFR 14 Semanal"])
-
+# =========================
 # INTERFACE
-st.title("Ações - IFR 14 Semanal")
+# =========================
 
-# MOSTRAR COM LINKS
-st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
+st.title("📊 Monitor de Mercado")
+
+# AÇÕES
+st.subheader("Ações")
+
+df_acoes = gerar_tabela(acoes)
+styled_acoes = df_acoes.style.applymap(color_ifr, subset=["IFR 14 Semanal"])
+st.markdown(styled_acoes.to_html(escape=False), unsafe_allow_html=True)
+
+# FIIs
+st.subheader("FIIs")
+
+df_fiis = gerar_tabela(fiis)
+styled_fiis = df_fiis.style.applymap(color_ifr, subset=["IFR 14 Semanal"])
+st.markdown(styled_fiis.to_html(escape=False), unsafe_allow_html=True)
+
+# BTC
+st.subheader("Bitcoin")
+
+df_btc = gerar_tabela(btc, tipo="btc")
+styled_btc = df_btc.style.applymap(color_ifr, subset=["IFR 14 Semanal"])
+st.markdown(styled_btc.to_html(escape=False), unsafe_allow_html=True)
