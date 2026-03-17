@@ -66,19 +66,24 @@ def gerar_tabela(lista, tipo="acao"):
 
         nome = ativo.replace(".SA", "").replace("-USD", "")
 
+        # LINK TRADINGVIEW
         if tipo == "btc":
-            link = f"https://www.tradingview.com/chart/?symbol=BTCUSD"
+            link_tv = f"https://www.tradingview.com/chart/?symbol=BTCUSD"
         else:
-            link = f"https://www.tradingview.com/chart/?symbol=BMFBOVESPA:{nome}"
+            link_tv = f"https://www.tradingview.com/chart/?symbol=BMFBOVESPA:{nome}"
+
+        # LINK FUNDAMENTALISTA (analisedeacoes)
+        link_fund = f"https://www.analisedeacoes.com/acoes/{nome.lower()}/"
 
         dados.append({
-            "Ativo": f'<a href="{link}" target="_blank">{nome}</a>',
-            "IFR 14 Semanal": ifr
+            "Ativo": f'<a href="{link_tv}" target="_blank">{nome}</a>',
+            "IFR 14": ifr,
+            "📊": f'<a href="{link_fund}" target="_blank">📊</a>'
         })
 
     df = pd.DataFrame(dados)
     df = df.dropna()
-    df = df.sort_values(by="IFR 14 Semanal")
+    df = df.sort_values(by="IFR 14")
 
     return df
 
@@ -104,21 +109,18 @@ st.title("📊 Monitor de Mercado")
 
 # AÇÕES
 st.subheader("Ações")
-
 df_acoes = gerar_tabela(acoes)
-styled_acoes = df_acoes.style.applymap(color_ifr, subset=["IFR 14 Semanal"])
+styled_acoes = df_acoes.style.applymap(color_ifr, subset=["IFR 14"])
 st.markdown(styled_acoes.to_html(escape=False), unsafe_allow_html=True)
 
 # FIIs
 st.subheader("FIIs")
-
 df_fiis = gerar_tabela(fiis)
-styled_fiis = df_fiis.style.applymap(color_ifr, subset=["IFR 14 Semanal"])
+styled_fiis = df_fiis.style.applymap(color_ifr, subset=["IFR 14"])
 st.markdown(styled_fiis.to_html(escape=False), unsafe_allow_html=True)
 
 # BTC
 st.subheader("Bitcoin")
-
 df_btc = gerar_tabela(btc, tipo="btc")
-styled_btc = df_btc.style.applymap(color_ifr, subset=["IFR 14 Semanal"])
+styled_btc = df_btc.style.applymap(color_ifr, subset=["IFR 14"])
 st.markdown(styled_btc.to_html(escape=False), unsafe_allow_html=True)
