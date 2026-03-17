@@ -46,7 +46,7 @@ for acao in acoes:
     ifr = calcular_ifr(acao)
 
     ticker_limpo = acao.replace(".SA", "")
-   link = f"https://www.tradingview.com/chart/?symbol=BMFBOVESPA:{ticker_limpo}"
+   link = f"https://www.tradingview.com/chart/?symbol=BMFBOVESPA:{ticker_limpo}",
 
     dados.append({
         "Ação": f'<a href="{link}" target="_blank">{ticker_limpo}</a>',
