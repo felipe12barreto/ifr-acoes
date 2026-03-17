@@ -44,18 +44,22 @@ dados = []
 
 for acao in acoes:
     ifr = calcular_ifr(acao)
+
+    ticker_limpo = acao.replace(".SA", "")
+    link = f"https://www.tradingview.com/symbols/BMFBOVESPA-{ticker_limpo}/"
+
     dados.append({
-        "Ação": acao.replace(".SA", ""),
+        "Ação": f'<a href="{link}" target="_blank">{ticker_limpo}</a>',
         "IFR 14 Semanal": ifr
     })
 
 # CRIAR DATAFRAME
 df = pd.DataFrame(dados)
 
-# REMOVER VALORES NONE
+# REMOVER None
 df = df.dropna()
 
-# ORDENAR PELO IFR
+# ORDENAR
 df = df.sort_values(by="IFR 14 Semanal")
 
 # FUNÇÃO DE COR
@@ -75,4 +79,5 @@ styled_df = df.style.applymap(color_ifr, subset=["IFR 14 Semanal"])
 # INTERFACE
 st.title("Ações - IFR 14 Semanal")
 
-st.dataframe(styled_df)
+# MOSTRAR COM LINKS
+st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
