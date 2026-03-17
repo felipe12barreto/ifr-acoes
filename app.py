@@ -3,6 +3,19 @@ import pandas as pd
 import ta
 import streamlit as st
 
+#CSS
+st.markdown("""
+<style>
+.main {
+    text-align: center;
+}
+table {
+    margin-left: auto;
+    margin-right: auto;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # =========================
 # LISTAS
 # =========================
