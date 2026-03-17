@@ -2,3 +2,5 @@ yfinance
 pandas
 ta
 streamlit
+numpy
+altair==4.2.2
