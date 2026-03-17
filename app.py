@@ -55,7 +55,7 @@ def calcular_ifr(ticker):
         return None
 
 # =========================
-# FUNÇÃO PARA GERAR TABELA
+# GERAR TABELA
 # =========================
 
 def gerar_tabela(lista, tipo="acao"):
@@ -72,14 +72,20 @@ def gerar_tabela(lista, tipo="acao"):
         else:
             link_tv = f"https://www.tradingview.com/chart/?symbol=BMFBOVESPA:{nome}"
 
-        # LINK FUNDAMENTALISTA (analisedeacoes)
-        link_fund = f"https://www.analisedeacoes.com/acoes/{nome.lower()}/"
+        if tipo == "acao":
+            link_fund = f"https://www.analisedeacoes.com/acoes/{nome.lower()}/"
 
-        dados.append({
-            "Ativo": f'<a href="{link_tv}" target="_blank">{nome}</a>',
-            "IFR 14": ifr,
-            "📊": f'<a href="{link_fund}" target="_blank">📊</a>'
-        })
+            dados.append({
+                "Ativo": f'<a href="{link_tv}" target="_blank">{nome}</a>',
+                "IFR 14": ifr,
+                "📊": f'<a href="{link_fund}" target="_blank">📊</a>'
+            })
+
+        else:
+            dados.append({
+                "Ativo": f'<a href="{link_tv}" target="_blank">{nome}</a>',
+                "IFR 14": ifr
+            })
 
     df = pd.DataFrame(dados)
     df = df.dropna()
@@ -109,13 +115,13 @@ st.title("📊 Monitor de Mercado")
 
 # AÇÕES
 st.subheader("Ações")
-df_acoes = gerar_tabela(acoes)
+df_acoes = gerar_tabela(acoes, tipo="acao")
 styled_acoes = df_acoes.style.applymap(color_ifr, subset=["IFR 14"])
 st.markdown(styled_acoes.to_html(escape=False), unsafe_allow_html=True)
 
 # FIIs
 st.subheader("FIIs")
-df_fiis = gerar_tabela(fiis)
+df_fiis = gerar_tabela(fiis, tipo="fii")
 styled_fiis = df_fiis.style.applymap(color_ifr, subset=["IFR 14"])
 st.markdown(styled_fiis.to_html(escape=False), unsafe_allow_html=True)
 
