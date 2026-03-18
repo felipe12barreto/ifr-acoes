@@ -4,7 +4,7 @@ import ta
 import streamlit as st
 
 # =========================
-# ESTILO (centralizar)
+# ESTILO
 # =========================
 st.markdown("""
 <style>
@@ -46,52 +46,58 @@ btc = ["BTC-USD"]
 # FUNÇÕES IFR
 # =========================
 
-def calcular_ifr(ticker):
+def calcular_ifr(ticker, periodo):
     try:
         df = yf.download(
             ticker,
-            period="1y",
+            period=periodo,
             interval="1wk",
             auto_adjust=True,
             progress=False
         )
 
         if df.empty or len(df) < 20:
-            return None
+            return None, None, None
 
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
         df['rsi'] = ta.momentum.RSIIndicator(df['Close'], window=14).rsi()
 
-        return round(df['rsi'].iloc[-1], 2)
+        atual = df['rsi'].iloc[-1]
+        minimo = df['rsi'].min()
+        maximo = df['rsi'].max()
+
+        return round(atual, 2), round(minimo, 2), round(maximo, 2)
 
     except:
+        return None, None, None
+
+# =========================
+# TERMÔMETRO
+# =========================
+
+def classificar_termometro(atual, minimo, maximo):
+    if None in [atual, minimo, maximo]:
         return None
 
+    intervalo = maximo - minimo
+    passo = intervalo / 7
 
-def calcular_ifr_min_5anos(ticker):
-    try:
-        df = yf.download(
-            ticker,
-            period="5y",
-            interval="1wk",
-            auto_adjust=True,
-            progress=False
-        )
-
-        if df.empty or len(df) < 50:
-            return None
-
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-
-        df['rsi'] = ta.momentum.RSIIndicator(df['Close'], window=14).rsi()
-
-        return round(df['rsi'].min(), 2)
-
-    except:
-        return None
+    if atual <= minimo + passo:
+        return "Muito ótimo"
+    elif atual <= minimo + 2*passo:
+        return "Ótimo"
+    elif atual <= minimo + 3*passo:
+        return "Bom"
+    elif atual <= minimo + 4*passo:
+        return "Normal"
+    elif atual <= minimo + 5*passo:
+        return "Ruim"
+    elif atual <= minimo + 6*passo:
+        return "Péssimo"
+    else:
+        return "Muito péssimo"
 
 # =========================
 # GERAR TABELA
@@ -101,16 +107,16 @@ def gerar_tabela(lista, tipo="acao"):
     dados = []
 
     for ativo in lista:
-        ifr = calcular_ifr(ativo)
-        ifr_min = calcular_ifr_min_5anos(ativo)
+        ifr, minimo, maximo = calcular_ifr(ativo, "5y")
 
         nome = ativo.replace(".SA", "").replace("-USD", "")
 
-        # LINK TRADINGVIEW
         if tipo == "btc":
             link_tv = "https://www.tradingview.com/chart/?symbol=BTCUSD"
         else:
             link_tv = f"https://www.tradingview.com/chart/?symbol=BMFBOVESPA:{nome}"
+
+        termometro = classificar_termometro(ifr, minimo, maximo)
 
         if tipo == "acao":
             link_fund = f"https://www.analisedeacoes.com/acoes/{nome.lower()}/"
@@ -118,15 +124,16 @@ def gerar_tabela(lista, tipo="acao"):
             dados.append({
                 "Ativo": f'<a href="{link_tv}" target="_blank">{nome}</a>',
                 "IFR 14": ifr,
-                "Min 5 anos": ifr_min,
+                "Min 5 anos": minimo,
+                "Termômetro": termometro,
                 "📊": f'<a href="{link_fund}" target="_blank">📊</a>'
             })
-
         else:
             dados.append({
                 "Ativo": f'<a href="{link_tv}" target="_blank">{nome}</a>',
                 "IFR 14": ifr,
-                "Min 5 anos": ifr_min
+                "Min 5 anos": minimo,
+                "Termômetro": termometro
             })
 
     df = pd.DataFrame(dados)
@@ -136,7 +143,7 @@ def gerar_tabela(lista, tipo="acao"):
     return df
 
 # =========================
-# COR IFR
+# CORES
 # =========================
 
 def color_ifr(val):
@@ -155,19 +162,16 @@ def color_ifr(val):
 
 st.title("📊 Monitor de Mercado")
 
-# AÇÕES
 st.subheader("Ações")
 df_acoes = gerar_tabela(acoes, tipo="acao")
 styled_acoes = df_acoes.style.applymap(color_ifr, subset=["IFR 14"])
 st.markdown(styled_acoes.to_html(escape=False), unsafe_allow_html=True)
 
-# FIIs
 st.subheader("FIIs")
 df_fiis = gerar_tabela(fiis, tipo="fii")
 styled_fiis = df_fiis.style.applymap(color_ifr, subset=["IFR 14"])
 st.markdown(styled_fiis.to_html(escape=False), unsafe_allow_html=True)
 
-# BTC
 st.subheader("Bitcoin")
 df_btc = gerar_tabela(btc, tipo="btc")
 styled_btc = df_btc.style.applymap(color_ifr, subset=["IFR 14"])
