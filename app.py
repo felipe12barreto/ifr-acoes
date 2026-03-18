@@ -43,18 +43,12 @@ fiis = [
 btc = ["BTC-USD"]
 
 # =========================
-# FUNÇÕES IFR
+# FUNÇÃO IFR
 # =========================
 
-def calcular_ifr(ticker, periodo):
+def calcular_ifr(ticker):
     try:
-        df = yf.download(
-            ticker,
-            period=periodo,
-            interval="1wk",
-            auto_adjust=True,
-            progress=False
-        )
+        df = yf.download(ticker, period="5y", interval="1wk", auto_adjust=True, progress=False)
 
         if df.empty or len(df) < 20:
             return None, None, None
@@ -85,19 +79,19 @@ def classificar_termometro(atual, minimo, maximo):
     passo = intervalo / 7
 
     if atual <= minimo + passo:
-        return "Muito ótimo"
+        return "compra insana"
     elif atual <= minimo + 2*passo:
-        return "Ótimo"
+        return "compra boa"
     elif atual <= minimo + 3*passo:
-        return "Bom"
+        return "normal"
     elif atual <= minimo + 4*passo:
-        return "Normal"
+        return "normal"
     elif atual <= minimo + 5*passo:
-        return "Ruim"
+        return "normal"
     elif atual <= minimo + 6*passo:
-        return "Péssimo"
+        return "venda boa"
     else:
-        return "Muito péssimo"
+        return "venda insana"
 
 # =========================
 # GERAR TABELA
@@ -107,7 +101,7 @@ def gerar_tabela(lista, tipo="acao"):
     dados = []
 
     for ativo in lista:
-        ifr, minimo, maximo = calcular_ifr(ativo, "5y")
+        ifr, minimo, maximo = calcular_ifr(ativo)
 
         nome = ativo.replace(".SA", "").replace("-USD", "")
 
@@ -124,16 +118,17 @@ def gerar_tabela(lista, tipo="acao"):
             dados.append({
                 "Ativo": f'<a href="{link_tv}" target="_blank">{nome}</a>',
                 "IFR 14": ifr,
-                "Min 5 anos": minimo,
                 "Termômetro": termometro,
+                "Min 5 anos": minimo,
                 "📊": f'<a href="{link_fund}" target="_blank">📊</a>'
             })
+
         else:
             dados.append({
                 "Ativo": f'<a href="{link_tv}" target="_blank">{nome}</a>',
                 "IFR 14": ifr,
-                "Min 5 anos": minimo,
-                "Termômetro": termometro
+                "Termômetro": termometro,
+                "Min 5 anos": minimo
             })
 
     df = pd.DataFrame(dados)
@@ -156,6 +151,14 @@ def color_ifr(val):
     else:
         return 'color: red'
 
+def color_termometro(val):
+    if val in ["compra insana", "compra boa"]:
+        return 'color: green; font-weight: bold'
+    elif val in ["venda insana", "venda boa"]:
+        return 'color: red; font-weight: bold'
+    else:
+        return 'color: white'
+
 # =========================
 # INTERFACE
 # =========================
@@ -164,15 +167,18 @@ st.title("📊 Monitor de Mercado")
 
 st.subheader("Ações")
 df_acoes = gerar_tabela(acoes, tipo="acao")
-styled_acoes = df_acoes.style.applymap(color_ifr, subset=["IFR 14"])
+styled_acoes = df_acoes.style.applymap(color_ifr, subset=["IFR 14"]) \
+                              .applymap(color_termometro, subset=["Termômetro"])
 st.markdown(styled_acoes.to_html(escape=False), unsafe_allow_html=True)
 
 st.subheader("FIIs")
 df_fiis = gerar_tabela(fiis, tipo="fii")
-styled_fiis = df_fiis.style.applymap(color_ifr, subset=["IFR 14"])
+styled_fiis = df_fiis.style.applymap(color_ifr, subset=["IFR 14"]) \
+                            .applymap(color_termometro, subset=["Termômetro"])
 st.markdown(styled_fiis.to_html(escape=False), unsafe_allow_html=True)
 
 st.subheader("Bitcoin")
 df_btc = gerar_tabela(btc, tipo="btc")
-styled_btc = df_btc.style.applymap(color_ifr, subset=["IFR 14"])
+styled_btc = df_btc.style.applymap(color_ifr, subset=["IFR 14"]) \
+                          .applymap(color_termometro, subset=["Termômetro"])
 st.markdown(styled_btc.to_html(escape=False), unsafe_allow_html=True)
