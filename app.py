@@ -1,9 +1,11 @@
-import yfinance as yf
+ import yfinance as yf
 import pandas as pd
 import ta
 import streamlit as st
 
-#CSS
+# =========================
+# ESTILO (centralizar)
+# =========================
 st.markdown("""
 <style>
 h1, h2, h3 {
@@ -41,7 +43,7 @@ fiis = [
 btc = ["BTC-USD"]
 
 # =========================
-# FUNÇÃO IFR
+# FUNÇÕES IFR
 # =========================
 
 def calcular_ifr(ticker):
@@ -67,6 +69,30 @@ def calcular_ifr(ticker):
     except:
         return None
 
+
+def calcular_ifr_min_5anos(ticker):
+    try:
+        df = yf.download(
+            ticker,
+            period="5y",
+            interval="1wk",
+            auto_adjust=True,
+            progress=False
+        )
+
+        if df.empty or len(df) < 50:
+            return None
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
+        df['rsi'] = ta.momentum.RSIIndicator(df['Close'], window=14).rsi()
+
+        return round(df['rsi'].min(), 2)
+
+    except:
+        return None
+
 # =========================
 # GERAR TABELA
 # =========================
@@ -76,12 +102,13 @@ def gerar_tabela(lista, tipo="acao"):
 
     for ativo in lista:
         ifr = calcular_ifr(ativo)
+        ifr_min = calcular_ifr_min_5anos(ativo)
 
         nome = ativo.replace(".SA", "").replace("-USD", "")
 
         # LINK TRADINGVIEW
         if tipo == "btc":
-            link_tv = f"https://www.tradingview.com/chart/?symbol=BTCUSD"
+            link_tv = "https://www.tradingview.com/chart/?symbol=BTCUSD"
         else:
             link_tv = f"https://www.tradingview.com/chart/?symbol=BMFBOVESPA:{nome}"
 
@@ -91,13 +118,15 @@ def gerar_tabela(lista, tipo="acao"):
             dados.append({
                 "Ativo": f'<a href="{link_tv}" target="_blank">{nome}</a>',
                 "IFR 14": ifr,
+                "Min 5 anos": ifr_min,
                 "📊": f'<a href="{link_fund}" target="_blank">📊</a>'
             })
 
         else:
             dados.append({
                 "Ativo": f'<a href="{link_tv}" target="_blank">{nome}</a>',
-                "IFR 14": ifr
+                "IFR 14": ifr,
+                "Min 5 anos": ifr_min
             })
 
     df = pd.DataFrame(dados)
