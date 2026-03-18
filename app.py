@@ -6,7 +6,7 @@ import streamlit as st
 #CSS
 st.markdown("""
 <style>
-.main {
+h1, h2, h3 {
     text-align: center;
 }
 table {
