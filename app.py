@@ -62,7 +62,7 @@ def calcular_ifr(ticker):
         minimo = df['rsi'].min()
         maximo = df['rsi'].max()
 
-        return round(atual, 2), round(minimo, 2), round(maximo, 2)
+        return round(atual, 1), round(minimo, 1), round(maximo, 1)
 
     except:
         return None, None, None
@@ -135,6 +135,10 @@ def gerar_tabela(lista, tipo="acao"):
     df = df.dropna()
     df = df.sort_values(by="IFR 14")
 
+    # FORMATAÇÃO
+    df["IFR 14"] = df["IFR 14"].map(lambda x: f"{x:.1f}")
+    df["Min 5 anos"] = df["Min 5 anos"].map(lambda x: f"{x:.1f}")
+
     return df
 
 # =========================
@@ -142,6 +146,7 @@ def gerar_tabela(lista, tipo="acao"):
 # =========================
 
 def color_ifr(val):
+    val = float(val)
     if val < 30:
         return 'color: green'
     elif val < 40:
@@ -165,20 +170,23 @@ def color_termometro(val):
 
 st.title("📊 Monitor de Mercado")
 
+# AÇÕES
 st.subheader("Ações")
 df_acoes = gerar_tabela(acoes, tipo="acao")
-styled_acoes = df_acoes.style.applymap(color_ifr, subset=["IFR 14"]) \
-                              .applymap(color_termometro, subset=["Termômetro"])
+styled_acoes = df_acoes.style.map(color_ifr, subset=["IFR 14"]) \
+                              .map(color_termometro, subset=["Termômetro"])
 st.markdown(styled_acoes.to_html(escape=False), unsafe_allow_html=True)
 
+# FIIs
 st.subheader("FIIs")
 df_fiis = gerar_tabela(fiis, tipo="fii")
-styled_fiis = df_fiis.style.applymap(color_ifr, subset=["IFR 14"]) \
-                            .applymap(color_termometro, subset=["Termômetro"])
+styled_fiis = df_fiis.style.map(color_ifr, subset=["IFR 14"]) \
+                            .map(color_termometro, subset=["Termômetro"])
 st.markdown(styled_fiis.to_html(escape=False), unsafe_allow_html=True)
 
+# BTC
 st.subheader("Bitcoin")
 df_btc = gerar_tabela(btc, tipo="btc")
-styled_btc = df_btc.style.applymap(color_ifr, subset=["IFR 14"]) \
-                          .applymap(color_termometro, subset=["Termômetro"])
+styled_btc = df_btc.style.map(color_ifr, subset=["IFR 14"]) \
+                          .map(color_termometro, subset=["Termômetro"])
 st.markdown(styled_btc.to_html(escape=False), unsafe_allow_html=True)
